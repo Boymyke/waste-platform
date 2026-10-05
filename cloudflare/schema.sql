@@ -58,6 +58,62 @@ CREATE TABLE IF NOT EXISTS pickups (
   FOREIGN KEY(collector_id) REFERENCES users(id)
 );
 
+CREATE TABLE IF NOT EXISTS addresses (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  label TEXT NOT NULL,
+  address TEXT NOT NULL,
+  area TEXT,
+  city TEXT DEFAULT 'Lagos',
+  is_default INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(user_id) REFERENCES users(id)
+);
+
+CREATE TABLE IF NOT EXISTS payments (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  pickup_id TEXT,
+  amount_kobo INTEGER NOT NULL,
+  status TEXT NOT NULL DEFAULT 'PENDING',
+  provider TEXT DEFAULT 'MANUAL',
+  reference TEXT UNIQUE,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(user_id) REFERENCES users(id),
+  FOREIGN KEY(pickup_id) REFERENCES pickups(id)
+);
+
+CREATE TABLE IF NOT EXISTS support_tickets (
+  id TEXT PRIMARY KEY,
+  user_id TEXT,
+  subject TEXT NOT NULL,
+  message TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'OPEN',
+  priority TEXT NOT NULL DEFAULT 'NORMAL',
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(user_id) REFERENCES users(id)
+);
+
+CREATE TABLE IF NOT EXISTS service_areas (
+  id TEXT PRIMARY KEY,
+  name TEXT UNIQUE NOT NULL,
+  city TEXT NOT NULL DEFAULT 'Lagos',
+  base_fee_kobo INTEGER NOT NULL DEFAULT 250000,
+  active INTEGER NOT NULL DEFAULT 1,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS notifications (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  title TEXT NOT NULL,
+  body TEXT NOT NULL,
+  read_at TEXT,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(user_id) REFERENCES users(id)
+);
+
 CREATE TABLE IF NOT EXISTS audit_logs (
   id TEXT PRIMARY KEY,
   actor_user_id TEXT,
@@ -71,3 +127,13 @@ CREATE TABLE IF NOT EXISTS audit_logs (
 CREATE INDEX IF NOT EXISTS idx_otp_phone ON otp_codes(phone);
 CREATE INDEX IF NOT EXISTS idx_pickups_user ON pickups(user_id);
 CREATE INDEX IF NOT EXISTS idx_applications_status ON collector_applications(status);
+CREATE INDEX IF NOT EXISTS idx_addresses_user ON addresses(user_id);
+CREATE INDEX IF NOT EXISTS idx_payments_user ON payments(user_id);
+CREATE INDEX IF NOT EXISTS idx_tickets_status ON support_tickets(status);
+
+INSERT OR IGNORE INTO service_areas(id,name,city,base_fee_kobo,active) VALUES
+('sa-lekki','Lekki','Lagos',350000,1),
+('sa-yaba','Yaba','Lagos',250000,1),
+('sa-ikoyi','Ikoyi','Lagos',400000,1),
+('sa-vi','Victoria Island','Lagos',400000,1),
+('sa-surulere','Surulere','Lagos',250000,1);
