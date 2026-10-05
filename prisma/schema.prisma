@@ -1,0 +1,82 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  USER
+  COLLECTOR
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum PickupStatus {
+  PENDING
+  ASSIGNED
+  EN_ROUTE
+  COLLECTED
+  COMPLETED
+  CANCELLED
+}
+
+model User {
+  id            String      @id @default(cuid())
+  phone         String      @unique
+  name          String?
+  role          UserRole    @default(USER)
+  verifiedAt    DateTime?
+  active        Boolean     @default(true)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  pickups       Pickup[]    @relation("CustomerPickups")
+  assignedJobs  Pickup[]    @relation("CollectorPickups")
+  otpCodes      OtpCode[]
+}
+
+model OtpCode {
+  id         String   @id @default(cuid())
+  phone      String
+  codeHash   String
+  expiresAt  DateTime
+  usedAt     DateTime?
+  attempts   Int      @default(0)
+  createdAt  DateTime @default(now())
+  user       User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String?
+  @@index([phone, createdAt])
+}
+
+model Pickup {
+  id           String       @id @default(cuid())
+  reference    String       @unique
+  customer     User         @relation("CustomerPickups", fields: [customerId], references: [id])
+  customerId   String
+  collector    User?        @relation("CollectorPickups", fields: [collectorId], references: [id])
+  collectorId  String?
+  wasteType    String
+  notes        String?
+  address      String
+  latitude     Float?
+  longitude    Float?
+  amount       Decimal?     @db.Decimal(12, 2)
+  status       PickupStatus @default(PENDING)
+  scheduledFor DateTime?
+  completedAt  DateTime?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  actorId   String?
+  action    String
+  entity    String
+  entityId  String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+  @@index([actorId, createdAt])
+}
